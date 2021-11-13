@@ -1,6 +1,9 @@
+# docker
 # still sent to the daemon
 # but the ADD and COPY instructions do not copy them to the image.
 Dockerfile
 .dockerignore
 
+# git
+.git*
 README.md

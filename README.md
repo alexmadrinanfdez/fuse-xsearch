@@ -19,19 +19,21 @@ It provides the means to communicate with the FUSE kernel module.
 
 ## Virtual Machine
 
-This project targets Linux kernels. To run it in a virtual Linux environment, one possibility is to use virtual machines.
-The `vm` folder contains the tools to execute the program in a `Docker` virtual machine.
+The project targets Linux kernels. To run it in a virtual Linux environment, one possibility is to use virtual machines.
+The repository includes a `Dockerfile` to execute the program in a Docker virtual machine.
 To run the container, make sure you have `Docker` installed and execute in the terminal:
 
 ```bash
-cd vm
 docker build -t <tag> .
 docker run -it --cap-add SYS_ADMIN --device /dev/fuse <tag>
 ```
 
+where `<tag>` is simply a custom name given to the image.
+
 ### Test
 
-The more troubling dependency is `libfuse` because it needs to comunicate directly with the FUSE kernel module. To ensure a proper setup, run in the CLI of the container (inside the `fuse-3.10.5/build` folder):
+The more troubling dependency is `libfuse` because it needs to comunicate directly with the FUSE kernel module. 
+To ensure a proper setup, run in the CLI of the container:
 
 ```bash
 cd fuse-3.10.5/build

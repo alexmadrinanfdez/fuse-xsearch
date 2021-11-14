@@ -76,9 +76,28 @@ static void *xmp_init(struct fuse_conn_info *conn,
 	return NULL;
 }
 
+// GNU's definitions of the node attributes:
+// (http://www.gnu.org/software/libc/manual/html_node/Attribute-Meanings.html)
+	// 		st_uid: 	The user ID of the file’s owner.
+	//		st_gid: 	The group ID of the file.
+	//		st_atime: 	This is the last access time for the file.
+	//		st_mtime: 	This is the time of the last modification to the contents of the file.
+	//		st_mode: 	Specifies the mode of the file. 
+	//					This includes file type information and the file permission bits.
+	//		st_nlink: 	The number of hard links to the file. 
+	// 					This count keeps track of how many directories have entries for this file.
+	// 					If the count is ever decremented to zero, then the file itself is discarded
+	//					as soon as no process still holds it open.
+	//					Symbolic links are not counted in the total.
+	//		st_size:	This specifies the size of a regular file in bytes.
+	//					For files that are really devices this field isn’t usually meaningful.
+	//					For symbolic links this specifies the length of the file name the link refers to.
+
 static int xmp_getattr(const char *path, struct stat *stbuf,
 		       struct fuse_file_info *fi)
 {
+	printf( "[getattr] called on %s\n", path );
+
 	(void) fi;
 	int res;
 
@@ -91,6 +110,8 @@ static int xmp_getattr(const char *path, struct stat *stbuf,
 
 static int xmp_access(const char *path, int mask)
 {
+	printf( "[access] called on %s\n", path );
+
 	int res;
 
 	res = access(path, mask);
@@ -102,6 +123,8 @@ static int xmp_access(const char *path, int mask)
 
 static int xmp_readlink(const char *path, char *buf, size_t size)
 {
+	printf( "[readlink] called on %s\n", path );
+
 	int res;
 
 	res = readlink(path, buf, size - 1);
@@ -117,6 +140,8 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		       off_t offset, struct fuse_file_info *fi,
 		       enum fuse_readdir_flags flags)
 {
+	printf( "[readdir] called on %s\n", path );
+
 	DIR *dp;
 	struct dirent *de;
 
@@ -143,6 +168,8 @@ static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
 static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
 {
+	printf( "[mknod] called on %s\n", path );
+
 	int res;
 
 	res = mknod_wrapper(AT_FDCWD, path, NULL, mode, rdev);
@@ -154,6 +181,8 @@ static int xmp_mknod(const char *path, mode_t mode, dev_t rdev)
 
 static int xmp_mkdir(const char *path, mode_t mode)
 {
+	printf( "[mkdir] called on %s\n", path );
+
 	int res;
 
 	res = mkdir(path, mode);
@@ -165,6 +194,8 @@ static int xmp_mkdir(const char *path, mode_t mode)
 
 static int xmp_unlink(const char *path)
 {
+	printf( "[unlink] called on %s\n", path );
+
 	int res;
 
 	res = unlink(path);
@@ -176,6 +207,8 @@ static int xmp_unlink(const char *path)
 
 static int xmp_rmdir(const char *path)
 {
+	printf( "[rmdir] called on %s\n", path );
+
 	int res;
 
 	res = rmdir(path);
@@ -187,6 +220,8 @@ static int xmp_rmdir(const char *path)
 
 static int xmp_symlink(const char *from, const char *to)
 {
+	printf( "[symlink] called from %s to %s\n", from, to );
+
 	int res;
 
 	res = symlink(from, to);
@@ -198,6 +233,8 @@ static int xmp_symlink(const char *from, const char *to)
 
 static int xmp_rename(const char *from, const char *to, unsigned int flags)
 {
+	printf( "[rename] called from %s to %s\n", from, to );
+
 	int res;
 
 	if (flags)
@@ -212,6 +249,8 @@ static int xmp_rename(const char *from, const char *to, unsigned int flags)
 
 static int xmp_link(const char *from, const char *to)
 {
+	printf( "[link] called from %s to %s\n", from, to );
+
 	int res;
 
 	res = link(from, to);
@@ -224,6 +263,8 @@ static int xmp_link(const char *from, const char *to)
 static int xmp_chmod(const char *path, mode_t mode,
 		     struct fuse_file_info *fi)
 {
+	printf( "[chmod] calledon %s\n", path );
+
 	(void) fi;
 	int res;
 
@@ -237,6 +278,8 @@ static int xmp_chmod(const char *path, mode_t mode,
 static int xmp_chown(const char *path, uid_t uid, gid_t gid,
 		     struct fuse_file_info *fi)
 {
+	printf( "[chown] called on %s\n", path );
+
 	(void) fi;
 	int res;
 
@@ -250,6 +293,8 @@ static int xmp_chown(const char *path, uid_t uid, gid_t gid,
 static int xmp_truncate(const char *path, off_t size,
 			struct fuse_file_info *fi)
 {
+	printf( "[truncate] called on %s\n", path );
+
 	int res;
 
 	if (fi != NULL)
@@ -266,6 +311,8 @@ static int xmp_truncate(const char *path, off_t size,
 static int xmp_utimens(const char *path, const struct timespec ts[2],
 		       struct fuse_file_info *fi)
 {
+	printf( "[utimens] called on %s\n", path );
+
 	(void) fi;
 	int res;
 
@@ -281,6 +328,8 @@ static int xmp_utimens(const char *path, const struct timespec ts[2],
 static int xmp_create(const char *path, mode_t mode,
 		      struct fuse_file_info *fi)
 {
+	printf( "[create] called on %s\n", path );
+
 	int res;
 
 	res = open(path, fi->flags, mode);
@@ -293,6 +342,8 @@ static int xmp_create(const char *path, mode_t mode,
 
 static int xmp_open(const char *path, struct fuse_file_info *fi)
 {
+	printf( "[open] called on %s\n", path );
+
 	int res;
 
 	res = open(path, fi->flags);
@@ -306,6 +357,8 @@ static int xmp_open(const char *path, struct fuse_file_info *fi)
 static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 		    struct fuse_file_info *fi)
 {
+	printf( "[read] called on %s\n", path );
+
 	int fd;
 	int res;
 
@@ -329,6 +382,8 @@ static int xmp_read(const char *path, char *buf, size_t size, off_t offset,
 static int xmp_write(const char *path, const char *buf, size_t size,
 		     off_t offset, struct fuse_file_info *fi)
 {
+	printf( "[write] called on %s\n", path );
+
 	int fd;
 	int res;
 
@@ -352,6 +407,8 @@ static int xmp_write(const char *path, const char *buf, size_t size,
 
 static int xmp_statfs(const char *path, struct statvfs *stbuf)
 {
+	printf( "[statfs] called on %s\n", path );
+
 	int res;
 
 	res = statvfs(path, stbuf);
@@ -363,6 +420,8 @@ static int xmp_statfs(const char *path, struct statvfs *stbuf)
 
 static int xmp_release(const char *path, struct fuse_file_info *fi)
 {
+	printf( "[release] called on %s\n", path );
+
 	(void) path;
 	close(fi->fh);
 	return 0;
@@ -371,6 +430,8 @@ static int xmp_release(const char *path, struct fuse_file_info *fi)
 static int xmp_fsync(const char *path, int isdatasync,
 		     struct fuse_file_info *fi)
 {
+	printf( "[fsync] called on %s\n", path );
+
 	/* Just a stub.	 This method is optional and can safely be left
 	   unimplemented */
 
@@ -384,6 +445,8 @@ static int xmp_fsync(const char *path, int isdatasync,
 static int xmp_fallocate(const char *path, int mode,
 			off_t offset, off_t length, struct fuse_file_info *fi)
 {
+	printf( "[fallocate] called on %s\n", path );
+	
 	int fd;
 	int res;
 
@@ -413,6 +476,8 @@ static int xmp_fallocate(const char *path, int mode,
 static int xmp_setxattr(const char *path, const char *name, const char *value,
 			size_t size, int flags)
 {
+	printf( "[setxattr] called on %s\n", path );
+
 	int res = lsetxattr(path, name, value, size, flags);
 	if (res == -1)
 		return -errno;
@@ -422,6 +487,8 @@ static int xmp_setxattr(const char *path, const char *name, const char *value,
 static int xmp_getxattr(const char *path, const char *name, char *value,
 			size_t size)
 {
+	printf( "[getxattr] called on %s\n", path );
+
 	int res = lgetxattr(path, name, value, size);
 	if (res == -1)
 		return -errno;
@@ -430,6 +497,8 @@ static int xmp_getxattr(const char *path, const char *name, char *value,
 
 static int xmp_listxattr(const char *path, char *list, size_t size)
 {
+	printf( "[listxattr] called on %s\n", path );
+
 	int res = llistxattr(path, list, size);
 	if (res == -1)
 		return -errno;
@@ -438,6 +507,8 @@ static int xmp_listxattr(const char *path, char *list, size_t size)
 
 static int xmp_removexattr(const char *path, const char *name)
 {
+	printf( "[removexattr] called on %s\n", path );
+
 	int res = lremovexattr(path, name);
 	if (res == -1)
 		return -errno;
@@ -452,6 +523,8 @@ static ssize_t xmp_copy_file_range(const char *path_in,
 				   struct fuse_file_info *fi_out,
 				   off_t offset_out, size_t len, int flags)
 {
+	printf( "[copy_file_range] called\n" );
+
 	int fd_in, fd_out;
 	ssize_t res;
 
@@ -489,6 +562,8 @@ static ssize_t xmp_copy_file_range(const char *path_in,
 
 static off_t xmp_lseek(const char *path, off_t off, int whence, struct fuse_file_info *fi)
 {
+	printf( "[lseek] called on %s\n", path );
+
 	int fd;
 	off_t res;
 
@@ -510,7 +585,7 @@ static off_t xmp_lseek(const char *path, off_t off, int whence, struct fuse_file
 }
 
 static const struct fuse_operations xmp_oper = {
-	.init           = xmp_init,
+	.init       = xmp_init,
 	.getattr	= xmp_getattr,
 	.access		= xmp_access,
 	.readlink	= xmp_readlink,

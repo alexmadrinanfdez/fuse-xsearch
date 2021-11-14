@@ -23,12 +23,12 @@ To mount, execute in the terminal;
 
 ```bash
 gcc -Wall passthrough.c -o passthrough `pkg-config fuse3 --cflags --libs`
-mkdir -p <mountpoint>
-./passthrough <mountpoint>
-cd <mountpoint>
+./passthrough -f <mountpoint>
 ```
 
-And to unmount,
+The `-f` option will print debug messages specified via `printf`.
+
+If the feedback option is not used, to unmount;
 
 ```bash
 fusermount -u <mountpoint>

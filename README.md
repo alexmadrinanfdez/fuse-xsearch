@@ -4,8 +4,6 @@ Integration of XSearch with a local FUSE file system.
 
 The goal is to integrate XSearch within a file system to explore what kind of impact in performance it produces.
 
-## Related work
-
 _XSearch_ is a scalable solution for achieving information retrieval in large-scale storage systems.
 It focuses on indexing speed since it is focused on an academia audience that may prioritize availability over initial delay in their searches.
 The project's library is called [Ouroboros](https://gitlab.com/xsearch/ouroboroslib).
@@ -17,7 +15,26 @@ It allows non-privileged users to manage their own file system.
 [libfuse](https://github.com/libfuse/libfuse) can be used to implement such file systems.
 It provides the means to communicate with the FUSE kernel module.
 
-## Virtual Machine
+## Set-up
+
+The _passthrough_ file system mirrors the contents of the root directory (`/`) under the mountpoint. Conversely, any changes made under the mountpoint will be reflected in the root directory.
+
+To mount, execute in the terminal;
+
+```bash
+gcc -Wall passthrough.c -o passthrough `pkg-config fuse3 --cflags --libs`
+./passthrough -f <mountpoint>
+```
+
+The `-f` option will print debug messages specified via `printf`.
+
+If the feedback option is not used, to unmount;
+
+```bash
+fusermount -u <mountpoint>
+```
+
+### Virtual Machine
 
 The project targets Linux kernels. To run it in a virtual Linux environment, one possibility is to use virtual machines.
 The repository includes a `Dockerfile` to execute the program in a Docker virtual machine.
@@ -30,7 +47,7 @@ docker run -it --cap-add SYS_ADMIN --device /dev/fuse <tag>
 
 where `<tag>` is simply a custom name given to the image.
 
-### Test
+#### Test
 
 The more troubling dependency is `libfuse` because it needs to comunicate directly with the FUSE kernel module. 
 To ensure a proper setup, run in the CLI of the container:
@@ -49,5 +66,4 @@ cd example
 mkdir -p <mountpoint>
 ./<example> <mountpoint>
 cd <mountpoint>
-# try commands...
 ```

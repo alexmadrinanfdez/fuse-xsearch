@@ -13,7 +13,8 @@ RUN apt-get update && apt-get install -y \
     meson \
     udev \
     ninja-build \
-    kmod
+    kmod \
+    fuse3
 # avoid prompt for info
 RUN apt-get install --assume-yes git pip pkg-config
 # python packages
@@ -37,3 +38,5 @@ RUN meson ..
 RUN ninja install
 
 WORKDIR ../..
+COPY passthrough* .
+RUN gcc -Wall passthrough.c `pkg-config fuse3 --cflags --libs` -o passthrough

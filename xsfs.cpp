@@ -5,7 +5,7 @@
 
 /** @file
  *
- * This "filesystem" provides XSearch capabilities
+ * This minimal "filesystem" provides XSearch capabilities
  *
  * Compile with:
  *
@@ -14,16 +14,15 @@
 
 #define FUSE_USE_VERSION 31
 
+#ifdef linux
+/* For pread()/pwrite() */
+#define _XOPEN_SOURCE 700
+#endif
+
 extern "C" {
 	#include <fuse.h>
 	#include <fuse_lowlevel.h>
 }
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
-// #include <unistd.h>
-// #include <time.h>
-// #include <errno.h>
 
 #include <iostream>
 // #include <cmath>
@@ -31,6 +30,8 @@ extern "C" {
 #include <cstring>
 #include <clocale>
 
+#include <dirent.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -42,24 +43,7 @@ extern "C" {
 #define SERVER_BUFFER_SIZE 1024
 #define SERVER_PORT 8080
 
-/* Part to implement FUSE functions */
-
-
-static int xsfs_getattr(const char *path, struct stat *stbuf,
-			struct fuse_file_info *fi)
-{
-	(void) fi;
-	int res;
-
-	res = lstat(path, stbuf);
-	if (res == -1)
-		return - errno;
-
-	return 0;
-}
-
-
-/* Part to implement the server for xsearch queries */
+/* Server for XSearch queries */
 
 void server() {
 
@@ -122,9 +106,344 @@ void server() {
 
 }
 
+/* FUSE operations */
 
-static const struct fuse_operations xsfs_oper = {
-	.getattr	= xsfs_getattr,
+/* Get file attributes. Similar to stat() */
+static int xs_getattr(const char *path, struct stat *stbuf,
+			struct fuse_file_info *fi)
+{
+	printf( "[getattr] from (node) %s\n", path );
+
+	(void) fi;
+	int res;
+
+	res = lstat(path, stbuf);
+	if (res == -1)
+		return - errno;
+
+	return 0;
+}
+
+// static int xs_mknod(const char *path, mode_t mode, dev_t rdev);
+
+static int xs_mkdir(const char *path, mode_t mode)
+{
+	printf( "[mkdir] at (dir) %s\n", path );
+
+	int res;
+
+	res = mkdir(path, mode);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+/* Remove a file. Not related to symbolic/hard links */
+static int xs_unlink(const char *path)
+{
+	printf( "[unlink] at (file) %s\n", path );
+
+	int res;
+
+	res = unlink(path);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xs_rmdir(const char *path)
+{
+	printf( "[rmdir] at (dir) %s\n", path );
+
+	int res;
+
+	res = rmdir(path);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xs_rename(const char *from, const char *to, unsigned int flags)
+{
+	printf( "[rename] %s to %s\n", from, to );
+
+	int res;
+
+	if (flags)
+		return -EINVAL;
+
+	res = rename(from, to);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xs_open(const char *path, struct fuse_file_info *fi)
+{
+	printf( "[open] (file) at %s\n", path );
+
+	int res;
+
+	res = open(path, fi->flags);
+	if (res == -1)
+		return -errno;
+
+	fi->fh = res;
+	return 0;
+}
+
+static int xs_read(const char *path, char *buf, size_t size, off_t offset,
+		    struct fuse_file_info *fi)
+{
+	printf( "[read] %i bytes from (file) %s\n", size, path );
+
+	int fd;
+	int res;
+
+	if(fi == NULL)
+		fd = open(path, O_RDONLY);
+	else
+		fd = fi->fh;
+	
+	if (fd == -1)
+		return -errno;
+
+	res = pread(fd, buf, size, offset);
+	if (res == -1)
+		res = -errno;
+
+	if(fi == NULL)
+		close(fd);
+	return res;
+}
+
+static int xs_write(const char *path, const char *buf, size_t size,
+		    off_t offset, struct fuse_file_info *fi)
+{
+	printf( "[write] %i bytes in (file) %s\n", size, path );
+
+	int fd;
+	int res;
+
+	(void) fi;
+	if(fi == NULL)
+		fd = open(path, O_WRONLY);
+	else
+		fd = fi->fh;
+	
+	if (fd == -1)
+		return -errno;
+
+	res = pwrite(fd, buf, size, offset);
+	if (res == -1)
+		res = -errno;
+
+	if(fi == NULL)
+		close(fd);
+	return res;
+}
+
+static int xs_statfs(const char *path, struct statvfs *stbuf)
+{
+	printf( "[statfs] called\n", path );
+
+	int res;
+
+	res = statvfs(path, stbuf);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+/* Release an open file when there are no more references to it */
+static int xs_release(const char *path, struct fuse_file_info *fi)
+{
+	printf( "[release] (file) at %s\n", path );
+
+	(void) path;
+	close(fi->fh);
+	return 0;
+}
+
+static int xs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+		       off_t offset, struct fuse_file_info *fi,
+		       enum fuse_readdir_flags flags)
+{
+	printf( "[readdir] at (dir) %s\n", path );
+
+	DIR *dp;
+	struct dirent *de;
+
+	(void) offset;
+	(void) fi;
+	(void) flags;
+
+	dp = opendir(path);
+	if (dp == NULL)
+		return -errno;
+
+	while ((de = readdir(dp)) != NULL) {
+		struct stat st;
+		memset(&st, 0, sizeof(st));
+		st.st_ino = de->d_ino;
+		st.st_mode = de->d_type << 12;
+	}
+
+	closedir(dp);
+	return 0;
+}
+
+static void *xs_init(struct fuse_conn_info *conn,
+		      struct fuse_config *cfg)
+{
+	printf("[init] fs\n");
+
+	(void) conn;
+	cfg->use_ino = 1;
+
+	/* Pick up changes from lower filesystem right away.
+	   Also necessary for better hardlink support */
+	cfg->entry_timeout = 0;
+	cfg->attr_timeout = 0;
+	cfg->negative_timeout = 0;
+
+	return NULL;
+}
+
+/* Check file access permissions */
+static int xs_access(const char *path, int mask)
+{
+	printf( "[access] to path %s\n", path );
+
+	int res;
+
+	res = access(path, mask);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+
+static int xs_create(const char *path, mode_t mode,
+		    struct fuse_file_info *fi)
+{
+	printf( "[create] (file) at %s\n", path );
+
+	int res;
+
+	res = open(path, fi->flags, mode);
+	if (res == -1)
+		return -errno;
+
+	fi->fh = res;
+	return 0;
+}
+
+/* Change the access and modification times of a file with ns resolution */
+#ifdef HAVE_UTIMENSAT
+static int xs_utimens(const char *path, const struct timespec ts[2],
+		       struct fuse_file_info *fi)
+{
+	printf( "[utimens] called on %s\n", path );
+
+	(void) fi;
+	int res;
+
+	/* don't use utime/utimes since they follow symlinks */
+	res = utimensat(0, path, ts, AT_SYMLINK_NOFOLLOW);
+	if (res == -1)
+		return -errno;
+
+	return 0;
+}
+#endif
+
+/* Allocates space for an open file */
+#ifdef HAVE_POSIX_FALLOCATE
+static int xs_fallocate(const char *path, int mode,
+			off_t offset, off_t length, struct fuse_file_info *fi)
+{
+	printf( "[fallocate] file %s\n", path );
+	
+	int fd;
+	int res;
+
+	(void) fi;
+
+	if (mode)
+		return -EOPNOTSUPP;
+
+	if(fi == NULL)
+		fd = open(path, O_WRONLY);
+	else
+		fd = fi->fh;
+	
+	if (fd == -1)
+		return -errno;
+
+	res = -posix_fallocate(fd, offset, length);
+
+	if(fi == NULL)
+		close(fd);
+	return res;
+}
+#endif
+
+/* Find next data or hole after the specified offset */
+static off_t xs_lseek(const char *path, off_t off, int whence, struct fuse_file_info *fi)
+{
+	printf( "[lseek] %i at %s\n", whence, path );
+
+	int fd;
+	off_t res;
+
+	if (fi == NULL)
+		fd = open(path, O_RDONLY);
+	else
+		fd = fi->fh;
+
+	if (fd == -1)
+		return -errno;
+
+	res = lseek(fd, off, whence);
+	if (res == -1)
+		res = -errno;
+
+	if (fi == NULL)
+		close(fd);
+	return res;
+}
+
+/* Note: out-of-order designated initialization is supported 
+   in the C programming language, but is not allowed in C++. */
+static const struct fuse_operations xs_oper = {
+	.getattr	= xs_getattr,
+		// .mknod		= xs_mknod,
+	.mkdir		= xs_mkdir,
+	.unlink		= xs_unlink,
+	.rmdir		= xs_rmdir,
+	.rename		= xs_rename,
+	.open		= xs_open,
+	.read		= xs_read,
+	.write		= xs_write,
+	.statfs		= xs_statfs,
+	.release	= xs_release,
+	.readdir	= xs_readdir,
+	.init       = xs_init,
+	.access		= xs_access,
+	.create 	= xs_create,
+#ifdef HAVE_UTIMENSAT
+	.utimens	= xs_utimens,
+#endif
+#ifdef HAVE_POSIX_FALLOCATE
+	.fallocate	= xs_fallocate,
+#endif
+	.lseek		= xs_lseek,
 };
 
 int main(int argc, char *argv[])
@@ -134,5 +453,5 @@ int main(int argc, char *argv[])
     std::thread fooThread(server); 
 
 	umask(0);
-	return fuse_main(argc, argv, &xsfs_oper, NULL);
+	return fuse_main(argc, argv, &xs_oper, NULL);
 }

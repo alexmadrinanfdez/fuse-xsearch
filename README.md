@@ -17,9 +17,11 @@ It provides the means to communicate with the FUSE kernel module.
 
 ## Set-up
 
+### Passthrough file system
+
 The _passthrough_ file system mirrors the contents of the root directory (`/`) under the mountpoint. Conversely, any changes made under the mountpoint will be reflected in the root directory.
 
-To mount, execute in the terminal;
+To mount, execute in the terminal, inside the same folder as the file system code (`example/passthrough.c`);
 
 ```bash
 gcc -Wall passthrough.c -o passthrough `pkg-config fuse3 --cflags --libs`
@@ -32,6 +34,27 @@ If the feedback option is not used, to unmount;
 
 ```bash
 fusermount -u <mountpoint>
+```
+
+### XSearch-FUSE
+
+The _XSearch_ file system will incorporate indexing capabilities into the passthrough file system. Only a subset of the file system operations supported by FUSE will be available. The rest will prompt an error message of the form: `<op>: <ERROR_MSG>: Function not implemented`.
+
+Because the searching operations of the file system differ with those of the typical kernel file system (e.g., in input and return types), one or more queries may need to be implemented aside of the FUSE framework. This will be implemented, at first, through socket communication, using the simple client-server architecture. Therefore, the source consists of two files: the filesystem `xsfs.cpp` and the client `client.cpp`.
+
+To mount:
+
+```bash
+g++ -Wall xsfs.cpp -o xsfs `pkg-config fuse3 --cflags --libs`
+./passthrough -f <mountpoint>
+```
+
+The `-f` option will print debug messages specified via `printf`.
+
+In a separate terminal, execute the client:
+
+```bash
+g++ -Wall -Wextra client.cpp -o client
 ```
 
 ### Virtual Machine
@@ -67,3 +90,9 @@ mkdir -p <mountpoint>
 ./<example> <mountpoint>
 cd <mountpoint>
 ```
+
+## Documentation
+
+Sources of documentation for the XSearch project are limited to the repository (link in the description above).
+
+However, FUSE is a predefined protocol, and its implementation follows certain conventions. For a decent FUSE understanding, check the following [tutorial](https://www.cs.nmsu.edu/~pfeiffer/fuse-tutorial/html/index.html).

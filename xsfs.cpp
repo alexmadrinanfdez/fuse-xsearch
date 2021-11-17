@@ -1,23 +1,16 @@
 /*
   FUSE: Filesystem in Userspace
   Copyright (C) 2001-2007  Miklos Szeredi <miklos@szeredi.hu>
-
-  This program can be distributed under the terms of the GNU GPLv2.
-  See the file COPYING.
 */
 
 /** @file
  *
- * This "filesystem" provides xsearch capabilities
+ * This "filesystem" provides XSearch capabilities
  *
  * Compile with:
  *
- *     g++ -Wall xsearch-fuse.cpp `pkg-config fuse3 --cflags --libs` -o xsfs
- *
- * ## Source code ##
- * \include xsearch.c
+ *     g++ -Wall xsfs.cpp `pkg-config fuse3 --cflags --libs` -o xsfs
  */
-
 
 #define FUSE_USE_VERSION 31
 
@@ -49,9 +42,7 @@ extern "C" {
 #define SERVER_BUFFER_SIZE 1024
 #define SERVER_PORT 8080
 
-/* Part to implement FUSE functions.
- * 
- */
+/* Part to implement FUSE functions */
 
 
 static int xsfs_getattr(const char *path, struct stat *stbuf,
@@ -68,9 +59,7 @@ static int xsfs_getattr(const char *path, struct stat *stbuf,
 }
 
 
-/* Part to implement the server for xsearch
- * queries 
- */
+/* Part to implement the server for xsearch queries */
 
 void server() {
 

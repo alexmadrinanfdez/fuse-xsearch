@@ -1,4 +1,12 @@
-// Client side C/C++ program to demonstrate Socket programming
+/** @file
+ *
+ * Client side C/C++ program to demonstrate socket programming
+ *
+ * Compile with:
+ *
+ *     g++ -Wall -Wextra client.cpp -o client
+ */
+
 #include <stdio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>

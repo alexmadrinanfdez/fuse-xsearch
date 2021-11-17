@@ -38,5 +38,6 @@ RUN meson ..
 RUN ninja install
 
 WORKDIR ../..
-COPY passthrough* .
-RUN gcc -Wall passthrough.c `pkg-config fuse3 --cflags --libs` -o passthrough
+COPY *.cpp .
+RUN g++ -Wall xsfs.cpp `pkg-config fuse3 --cflags --libs` -o xsfs
+RUN g++ -Wall -Wextra client.cpp -o client

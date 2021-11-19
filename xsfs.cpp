@@ -10,6 +10,9 @@
  * Compile with:
  *
  *     g++ -Wall xsfs.cpp `pkg-config fuse3 --cflags --libs` -o xsfs
+ * 
+ * Additional compiler flags for warnings:
+ * 		-Wwrite-strings -Wformat-extra-args -Wformat=
  */
 
 #define FUSE_USE_VERSION 31
@@ -40,18 +43,18 @@ extern "C" {
 #include <string.h>
 #include <thread>
 
-#define SERVER_BUFFER_SIZE 1024
-#define SERVER_PORT 8080
+#define BUFFER_SIZE 1024
+#define PORT 8080
 
 /* Server for XSearch queries */
 
 void server() {
 
+	char *msg = "Success!";
     int server_fd, new_socket, valread;
 	struct sockaddr_in address;
 	int opt = 1;
 	int addrlen = sizeof(address);
-	char buffer[SERVER_BUFFER_SIZE] = {0};
 	
 	// Creating socket file descriptor
 	if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0)
@@ -69,11 +72,11 @@ void server() {
 	}
 	address.sin_family = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons( SERVER_PORT );
+	address.sin_port = htons( PORT );
 	
 	// Forcefully attaching socket to the port 8080
 	if (bind(server_fd, (struct sockaddr *)&address,
-								sizeof(address))<0)
+								sizeof(address)) < 0)
 	{
 		perror("bind failed");
 		exit(EXIT_FAILURE);
@@ -84,24 +87,24 @@ void server() {
 		exit(EXIT_FAILURE);
 	}
 
-    while (1==1) {
-
-	if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
-					(socklen_t*)&addrlen))<0)
+    while ( 1 )
 	{
-		perror("accept");
-		exit(EXIT_FAILURE);
-	}  
+		if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
+						(socklen_t*)&addrlen)) < 0)
+		{
+			perror("accept");
+			exit(EXIT_FAILURE);
+		}
 
-    valread = read( new_socket , buffer, SERVER_BUFFER_SIZE);    
-    std::cout << "[server] " << buffer << std::endl;
+		// create empty buffer every time
+		char buffer[BUFFER_SIZE] = {0};
+		valread = read(new_socket, buffer, BUFFER_SIZE);    
+		std::cout << "[server] " << buffer << std::endl; 
 
 
-    // TODO : process query 
-
-    char *hello = "Query received"; 
-	send(new_socket , hello , strlen(hello) , 0 );
-
+		// TODO : process query 
+ 
+		send(new_socket, msg, strlen(msg), 0);
     }
 
 }
@@ -301,7 +304,7 @@ static int xs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static void *xs_init(struct fuse_conn_info *conn,
 		      struct fuse_config *cfg)
 {
-	printf("[init] fs\n");
+	printf("[init] filesystem\n");
 
 	(void) conn;
 	cfg->use_ino = 1;

@@ -27,6 +27,9 @@
  * Creates files on the underlying file system in response to a FUSE_MKNOD
  * operation
  */
+
+#include <unistd.h>
+
 static int mknod_wrapper(int dirfd, const char *path, const char *link,
 	int mode, dev_t rdev)
 {

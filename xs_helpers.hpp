@@ -4,7 +4,7 @@
 #include <chrono>
 #include <memory>
 
-#include "ouroboroslib/include/ouroboros.hpp"
+#include "ouroboros.hpp"
 
 using namespace std;
 using namespace ouroboros;
@@ -114,7 +114,7 @@ void work_read(MemoryComponentManager* manager,
 	// get the file index from the file index component
 	index = componentFileIndex->getFileIndex();
 	// create a new reader driver for the current file
-	reader = new WaveFileReaderDriver((filename, block_size, BLOCK_ADDON_SIZE, delims);
+	reader = new WaveFileReaderDriver((filename, block_size, BLOCK_ADDON_SIZE, delims));
 
 	// try to open the file in the reader driver; if it errors out print message and terminate
 	try {

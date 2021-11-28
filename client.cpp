@@ -22,7 +22,7 @@ int main(int argc, char const *argv[])
 
 	if (argc < 2) {
 		
-		std::cout << "usage: " << argv[0] << " <query>" << std::endl;
+		std::cout << "Usage: " << argv[0] << " <query>" << std::endl;
 		return 1;
 	}
 
@@ -53,7 +53,6 @@ int main(int argc, char const *argv[])
 	}
 
 	send(sock, argv[1], strlen(argv[1]), 0 );
-	// printf("Hello message sent\n");
 	valread = read(sock, buffer, BUFFER_SIZE);
 	printf("%s\n", buffer);
 	return 0;

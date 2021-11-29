@@ -14,7 +14,7 @@ using namespace ouroboros;
 #define BLOCK_SIZE 1024
 #define PAGE_SIZE 4096
 #define DELIMITERS " \t\n"
-#define MAX_RESULTS 2
+#define INIT_CAPACITY 1 << 16 // == pow(2, x) (bit shifting)
 
 #define BUFFER_SIZE 1024
 #define PORT 8080

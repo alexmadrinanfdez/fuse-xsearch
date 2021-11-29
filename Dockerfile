@@ -39,5 +39,7 @@ RUN ninja install
 
 WORKDIR ../..
 COPY *.cpp .
-RUN g++ -Wall xsfs.cpp `pkg-config fuse3 --cflags --libs` -o xsfs
+COPY *.hpp .
+COPY *.h .
+RUN g++ -Wall -I ./ouroboroslib/include/ xsfs.cpp `pkg-config fuse3 --cflags --libs` -o xsfs
 RUN g++ -Wall -Wextra client.cpp -o client

@@ -48,8 +48,22 @@ extern "C" {
 
 using namespace std;
 
+/* XSearch variables declaration */
+
+int idx;
+int queue_size;
+int block_size;
+long page_size;
+// the manager is used to store and provide access to the queues
+TFIDFIndexMemoryComponentType store_type;
+MemoryComponentManager* manager;
+FileDualQueueMemoryComponent* component;
+DualQueue<FileDataBlock*> *queue;
+FileDataBlock *finalBlock;
+// atomic int storing the total number of blocks read
+atomic<long> total_num_tokens(0);
+
 /* Server for XSearch queries */
-// -----------------------------
 
 void server() {
 
@@ -113,7 +127,6 @@ void server() {
 }
 
 /* FUSE operations */
-// ------------------
 
 /* Get file attributes. Similar to stat() */
 static int xs_getattr(const char *path, struct stat *stbuf,
@@ -141,40 +154,13 @@ static int xs_mknod(const char *path, mode_t mode, dev_t rdev)
 	if (res == -1)
 		return -errno;
 
-	for (int i = 0; i < num_readers; i++) {
-        threads_read.push_back(thread(work_read,
-                                      manager,
-                                      path,
-                                      i,
-                                      block_size));
-    }
-
-	for (int i = 0; i < num_indexers; i++) {
-        threads_tok.push_back(thread(work_index,
-                                     manager,
-                                     &total_num_tokens,
-                                     i % num_readers,
-                                     i,
-                                     block_size + BLOCK_ADDON_SIZE));
-    }
-    
-    for (int i = 0; i < num_readers; i++) {
-        threads_read[i].join();
-    }
-
-    for (int i = 0; i < num_readers; i++) {
-        for (int j = 0; j < num_indexers / num_readers + 1; j++) {
-            component = (FileDualQueueMemoryComponent*) manager->getMemoryComponent(MemoryComponentType::DUALQUEUE, i);
-            queue = component->getDualQueue();
-            finalBlock = queue->pop_empty();
-            finalBlock->length = -1;
-            queue->push_full(finalBlock);
-        }
-    }
-
-    for (int i = 0; i < num_indexers; i++) {
-        threads_tok[i].join();
-    }
+	work_read(manager, path, idx, block_size);
+	work_index(manager, &total_num_tokens, idx, idx, block_size + BLOCK_ADDON_SIZE);
+	component = (FileDualQueueMemoryComponent*) manager->getMemoryComponent(MemoryComponentType::DUALQUEUE, idx);
+	queue = component->getDualQueue();
+	finalBlock = queue->pop_empty();
+	finalBlock->length = -1;
+	queue->push_full(finalBlock);
 
 	return 0;
 }
@@ -501,50 +487,22 @@ static const struct fuse_operations xs_oper = {
 
 int main(int argc, char *argv[])
 {
-    int num_readers = 2;
-    int num_indexers = 2;
-    int queue_size = QUEUE_SIZE_RATIO * num_indexers / num_readers;;
-    int block_size = BLOCK_SIZE;
-    long page_size = PAGE_SIZE;
-    TFIDFIndexMemoryComponentType store_type = TFIDFIndexMemoryComponentType::STD;
-
-	// the manager is used to store and provide access to NUMA sensitive components (i.e. the queues)
-    MemoryComponentManager* manager;
-    FileDualQueueMemoryComponent* component;
-    DualQueue<FileDataBlock*> *queue;
-    FileDataBlock *finalBlock;
-    // list of threads that initialize the NUMA sensitive components
-    vector<thread> threads_init;
-    // list of threads that will read the contents of the input files
-    vector<thread> threads_read;
-    // list of threads that will tokenize the contents of the input files
-    vector<thread> threads_tok;
+	idx = 1;
+	queue_size = QUEUE_SIZE_RATIO;
+	block_size = BLOCK_SIZE;
+	page_size = PAGE_SIZE;
+	store_type = TFIDFIndexMemoryComponentType::STD;
 	// create each queue add the queues to the manager
     manager = new MemoryComponentManager();
 
-	for (int i = 0; i < num_readers; i++) {
-        threads_init.push_back(thread(work_init_queues,
-                                      manager,
-                                      i,
-                                      queue_size,
-                                      block_size));
-    }
-    for (int i = 0; i < num_indexers; i++) {
-        threads_init.push_back(thread(work_init_indexes,
-                                      manager,
-                                      i,
-                                      page_size,
-                                      total_size / num_indexers,
-                                      store_type));
-    }
-    for (int i = 0; i < num_readers + num_indexers; i++) {
-        threads_init[i].join();
-    }
+	work_init_queues(manager, idx, queue_size, block_size);
+	work_init_indexes(manager, idx, page_size, INIT_CAPACITY, store_type);
 
     // launch server on separate thread 
     thread fooThread(server); 
 
 	umask(0);
+	// run the filesystem
 	return fuse_main(argc, argv, &xs_oper, NULL);
 
 	// free all memory components

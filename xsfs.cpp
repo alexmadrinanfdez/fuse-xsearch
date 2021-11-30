@@ -43,6 +43,8 @@ extern "C" {
 #include <netinet/in.h>
 #include <string.h>
 #include <thread>
+#include <utility>
+
 
 #include "xs_helpers.hpp"
 
@@ -154,7 +156,7 @@ static int xs_mknod(const char *path, mode_t mode, dev_t rdev)
 	if (res == -1)
 		return -errno;
 
-	work_read(manager, path, idx, block_size);
+	work_read(manager,  const_cast<char*>(path), idx, block_size);
 	work_index(manager, &total_num_tokens, idx, idx, block_size + BLOCK_ADDON_SIZE);
 	component = (FileDualQueueMemoryComponent*) manager->getMemoryComponent(MemoryComponentType::DUALQUEUE, idx);
 	queue = component->getDualQueue();

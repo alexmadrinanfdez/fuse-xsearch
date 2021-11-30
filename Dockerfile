@@ -38,8 +38,7 @@ RUN meson ..
 RUN ninja install
 
 WORKDIR ../..
-COPY *.cpp .
-COPY *.hpp .
-COPY *.h .
-RUN g++ -Wall -I ./ouroboroslib/include/ xsfs.cpp `pkg-config fuse3 --cflags --libs` -o xsfs
-RUN g++ -Wall -Wextra client.cpp -o client
+COPY . .
+WORKDIR ./build
+RUN cmake ..
+RUN make

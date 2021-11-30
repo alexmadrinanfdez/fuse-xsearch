@@ -156,14 +156,6 @@ static int xs_mknod(const char *path, mode_t mode, dev_t rdev)
 	if (res == -1)
 		return -errno;
 
-	work_read(manager,  const_cast<char*>(path), idx, block_size);
-	work_index(manager, &total_num_tokens, idx, idx, block_size + BLOCK_ADDON_SIZE);
-	component = (FileDualQueueMemoryComponent*) manager->getMemoryComponent(MemoryComponentType::DUALQUEUE, idx);
-	queue = component->getDualQueue();
-	finalBlock = queue->pop_empty();
-	finalBlock->length = -1;
-	queue->push_full(finalBlock);
-
 	return 0;
 }
 
@@ -308,6 +300,15 @@ static int xs_release(const char *path, struct fuse_file_info *fi)
 
 	(void) path;
 	close(fi->fh);
+
+	work_read(manager,  const_cast<char*>(path), idx, block_size);
+	work_index(manager, &total_num_tokens, idx, idx, block_size + BLOCK_ADDON_SIZE);
+	component = (FileDualQueueMemoryComponent*) manager->getMemoryComponent(MemoryComponentType::DUALQUEUE, idx);
+	queue = component->getDualQueue();
+	finalBlock = queue->pop_empty();
+	finalBlock->length = -1;
+	queue->push_full(finalBlock);
+
 	return 0;
 }
 

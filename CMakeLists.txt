@@ -10,6 +10,7 @@ pkg_check_modules(LIBFUSE REQUIRED fuse3)
 add_subdirectory(ouroboroslib EXCLUDE_FROM_ALL)
 
 add_executable(xsfs xsfs.cpp)
+add_executable(client client.cpp)
 target_compile_features(xsfs PUBLIC cxx_std_17)
 
 target_link_libraries(xsfs PUBLIC ${LIBFUSE_LIBRARIES} ouroboros "numa")

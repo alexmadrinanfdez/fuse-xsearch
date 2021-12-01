@@ -20,9 +20,8 @@
 int main(int argc, char const *argv[])
 {
 
-	if (argc < 2) {
-		
-		std::cout << "Usage: " << argv[0] << " <query>" << std::endl;
+	if (argc != 2) {
+		std::cout << "Usage: " << argv[0] << " <search_term>" << std::endl;
 		return 1;
 	}
 

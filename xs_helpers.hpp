@@ -15,9 +15,6 @@ using namespace ouroboros;
 #define DELIMITERS " \t\n"
 #define INIT_CAPACITY 1 << 16 // == pow(2, x) (bit shifting)
 
-#define BUFFER_SIZE 1024
-#define PORT 8080
-
 /* XSearch functions */
 
 void work_index(MemoryComponentManager* manager,

@@ -45,14 +45,18 @@ extern "C" {
 #include <thread>
 #include <utility>
 
-
 #include "xs_helpers.hpp"
 
 using namespace std;
+using namespace ouroboros;
+
+#define BUFFER_SIZE 1024
+#define PORT 8080
+#define MAX_RESULTS 2
 
 /* XSearch variables declaration */
 
-int idx;
+int id;
 int queue_size;
 int block_size;
 long page_size;
@@ -115,16 +119,54 @@ void server() {
 		}
 
 		// create empty buffer every time
-		char buffer[BUFFER_SIZE] = {0};
-		valread = read(new_socket, buffer, BUFFER_SIZE);    
-		std::cout << "[server] " << buffer << std::endl; 
+		char search_term[BUFFER_SIZE] = {0};
+		valread = read(new_socket, search_term, BUFFER_SIZE);    
+		cout << "[server] " << search_term << endl; 
 
+		// process query
+        int frequency = 0;
+        long numFiles = MAX_RESULTS;
+        
+        cout << "- " << search_term << " : [ ";
+        
+        TFIDFIndexMemoryComponent* componentIndex;
+		FileIndexMemoryComponent* componentFileIndex;
+		shared_ptr<BaseTFIDFIndex> index;
+		shared_ptr<BaseFileIndex> fileIndex;
+		shared_ptr<TFIndexResult> result;
+		long idx;
+		
+		// get the TFIDF index component identified by index_id
+		componentIndex = (TFIDFIndexMemoryComponent*) 
+							manager->getMemoryComponent(MemoryComponentType::TFIDF_INDEX, id);
 
-		// TODO : process query 
- 
+		// get the TFIDF index from the component
+		index = componentIndex->getTFIDFIndex();
+
+		// get the file index component identified by index_id modulo num_readers
+		componentFileIndex = (FileIndexMemoryComponent*)
+								manager->getMemoryComponent(MemoryComponentType::FILE_INDEX, id);
+		
+		// get the file index from the component
+		fileIndex = componentFileIndex->getFileIndex();
+
+		// search the index for the query term and return the term and inverse document frequencies
+		result = index->lookup(search_term);
+		for (int j = 0; (j < result->files.size()) and (numFiles > 0); j++, numFiles--) {
+			const char* file_path = fileIndex->reverseLookup(result->files[j].fileIdx);
+			cout << file_path << ":" << result->files[j].fileFrequency << " ";	
+		}
+		frequency += result->termFrequency;
+        
+        if (numFiles == 0) {
+            cout << "... ] " << frequency << endl;
+        } else {
+            cout << "] " << frequency << endl;
+        }
+
+		// notify the client
 		send(new_socket, msg, strlen(msg), 0);
     }
-
 }
 
 /* FUSE operations */
@@ -300,8 +342,8 @@ static int xs_release(const char *path, struct fuse_file_info *fi)
 	(void) path;
 	close(fi->fh);
 
-	work_read(manager,  const_cast<char*>(path), idx, block_size);
-	work_index(manager, &total_num_tokens, idx, idx, block_size + BLOCK_ADDON_SIZE);
+	work_read(manager,  const_cast<char*>(path), id, block_size);
+	work_index(manager, &total_num_tokens, id, id, block_size + BLOCK_ADDON_SIZE);
 
 	return 0;
 }
@@ -484,7 +526,7 @@ static const struct fuse_operations xs_oper = {
 
 int main(int argc, char *argv[])
 {
-	idx = 1;
+	id = 1;
 	queue_size = QUEUE_SIZE_RATIO;
 	block_size = BLOCK_SIZE;
 	page_size = PAGE_SIZE;
@@ -492,8 +534,8 @@ int main(int argc, char *argv[])
 	// create each queue add the queues to the manager
     manager = new MemoryComponentManager();
 
-	work_init_queues(manager, idx, queue_size, block_size);
-	work_init_indexes(manager, idx, page_size, INIT_CAPACITY, store_type);
+	work_init_queues(manager, id, queue_size, block_size);
+	work_init_indexes(manager, id, page_size, INIT_CAPACITY, store_type);
 
     // launch server on separate thread 
     thread fooThread(server); 
@@ -503,5 +545,5 @@ int main(int argc, char *argv[])
 	return fuse_main(argc, argv, &xs_oper, NULL);
 
 	// free all memory components
-    delete manager;
+    // delete manager;
 }

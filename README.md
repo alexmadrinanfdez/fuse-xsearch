@@ -33,7 +33,7 @@ TIf the feedback option, `-f`, will print debug messages specified via `printf`.
 To unmount;
 
 ```bash
-fusermount -u <mountpoint>
+fusermount -uz <mountpoint>
 ```
 
 ### XSearch-FUSE

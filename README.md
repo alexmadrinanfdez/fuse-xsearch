@@ -28,9 +28,9 @@ gcc -Wall passthrough.c -o passthrough `pkg-config fuse3 --cflags --libs`
 ./passthrough -f <mountpoint>
 ```
 
-The `-f` option will print debug messages specified via `printf`.
+TIf the feedback option, `-f`, will print debug messages specified via `printf`.
 
-If the feedback option is not used, to unmount;
+To unmount;
 
 ```bash
 fusermount -u <mountpoint>

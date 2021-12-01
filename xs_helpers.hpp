@@ -1,7 +1,6 @@
 #include <iostream>
 #include <thread>
 #include <atomic>
-#include <chrono>
 #include <memory>
 
 #include "ouroboros.hpp"
@@ -20,7 +19,6 @@ using namespace ouroboros;
 #define PORT 8080
 
 /* XSearch functions */
-// --------------------
 
 void work_index(MemoryComponentManager* manager,
                 atomic<long>* total_num_tokens,
@@ -99,6 +97,7 @@ void work_read(MemoryComponentManager* manager,
 	shared_ptr<BaseFileIndex> index;
 	WaveFileReaderDriver *reader;
 	FileDataBlock *dataBlock;
+	FileDataBlock *finalBlock;
 	char delims[32] = DELIMITERS;
 	int i, length;
 	long fileIdx;
@@ -137,6 +136,11 @@ void work_read(MemoryComponentManager* manager,
 		queue->push_full(dataBlock);
 		// if the reader driver reached the end of the file break from the while loop and read next file
 		if (length == 0) {
+			// signal end of the tokens
+			finalBlock = queue->pop_empty();
+			finalBlock->length = -1;
+			queue->push_full(finalBlock);
+
 			break;
 			}
 		}

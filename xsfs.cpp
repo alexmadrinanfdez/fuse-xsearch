@@ -61,7 +61,6 @@ TFIDFIndexMemoryComponentType store_type;
 MemoryComponentManager* manager;
 FileDualQueueMemoryComponent* component;
 DualQueue<FileDataBlock*> *queue;
-FileDataBlock *finalBlock;
 // atomic int storing the total number of blocks read
 atomic<long> total_num_tokens(0);
 
@@ -303,11 +302,6 @@ static int xs_release(const char *path, struct fuse_file_info *fi)
 
 	work_read(manager,  const_cast<char*>(path), idx, block_size);
 	work_index(manager, &total_num_tokens, idx, idx, block_size + BLOCK_ADDON_SIZE);
-	component = (FileDualQueueMemoryComponent*) manager->getMemoryComponent(MemoryComponentType::DUALQUEUE, idx);
-	queue = component->getDualQueue();
-	finalBlock = queue->pop_empty();
-	finalBlock->length = -1;
-	queue->push_full(finalBlock);
 
 	return 0;
 }

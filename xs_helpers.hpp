@@ -1,10 +1,3 @@
-#include <iostream>
-#include <thread>
-#include <atomic>
-#include <memory>
-
-#include "ouroboros.hpp"
-
 using namespace std;
 using namespace ouroboros;
 

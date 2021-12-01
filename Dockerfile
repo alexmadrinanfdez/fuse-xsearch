@@ -20,7 +20,7 @@ RUN apt-get install --assume-yes git pip pkg-config
 # python packages
 RUN pip3 install meson pytest
 
-WORKDIR /fuse-xsearch
+WORKDIR /xsfs
 
 # ouroboroslib setup
 RUN git clone https://gitlab.com/xsearch/ouroboroslib

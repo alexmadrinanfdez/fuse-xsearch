@@ -44,7 +44,11 @@ extern "C" {
 #include <string.h>
 #include <thread>
 #include <utility>
+// #include <thread>
+#include <atomic>
+#include <memory>
 
+#include "ouroboros.hpp"
 #include "xs_helpers.hpp"
 
 using namespace std;
@@ -71,8 +75,6 @@ atomic<long> total_num_tokens(0);
 /* Server for XSearch queries */
 
 void server() {
-
-	char *msg = "Success!";
     int server_fd, new_socket, valread;
 	struct sockaddr_in address;
 	int opt = 1;
@@ -127,7 +129,7 @@ void server() {
         int frequency = 0;
         long numFiles = MAX_RESULTS;
         
-        cout << "- " << search_term << " : [ ";
+        cout << "- " << search_term << " : [ " << flush;
         
         TFIDFIndexMemoryComponent* componentIndex;
 		FileIndexMemoryComponent* componentFileIndex;
@@ -146,7 +148,7 @@ void server() {
 		// get the file index component identified by index_id modulo num_readers
 		componentFileIndex = (FileIndexMemoryComponent*)
 								manager->getMemoryComponent(MemoryComponentType::FILE_INDEX, id);
-		
+
 		// get the file index from the component
 		fileIndex = componentFileIndex->getFileIndex();
 
@@ -154,7 +156,7 @@ void server() {
 		result = index->lookup(search_term);
 		for (int j = 0; (j < result->files.size()) and (numFiles > 0); j++, numFiles--) {
 			const char* file_path = fileIndex->reverseLookup(result->files[j].fileIdx);
-			cout << file_path << ":" << result->files[j].fileFrequency << " ";	
+			cout << file_path << ":" << result->files[j].fileFrequency << " " << flush;	
 		}
 		frequency += result->termFrequency;
         
@@ -165,6 +167,7 @@ void server() {
         }
 
 		// notify the client
+		char *msg = "Success!";
 		send(new_socket, msg, strlen(msg), 0);
     }
 }

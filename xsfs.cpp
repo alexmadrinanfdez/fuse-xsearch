@@ -533,12 +533,12 @@ int main(int argc, char *argv[])
 	queue_size = QUEUE_SIZE_RATIO;
 	block_size = BLOCK_SIZE;
 	page_size = PAGE_SIZE;
-	store_type = TFIDFIndexMemoryComponentType::STD;
+	store_type = TFIDFIndexMemoryComponentType::PSTD;
 	// create each queue add the queues to the manager
     manager = new MemoryComponentManager();
 
-	work_init_queues(manager, id, queue_size, block_size);
-	work_init_indexes(manager, id, page_size, INIT_CAPACITY, store_type);
+	work_init_queue(manager, id, queue_size, block_size);
+	work_init_index(manager, id, page_size, INIT_CAPACITY, store_type);
 
     // launch server on separate thread 
     thread fooThread(server); 

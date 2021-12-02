@@ -140,7 +140,7 @@ void work_read(MemoryComponentManager* manager,
 		delete reader;
 }
 
-void work_init_indexes(MemoryComponentManager* manager,
+void work_init_index(MemoryComponentManager* manager,
                        unsigned int index_id,
                        long page_size,
                        long initial_capacity,
@@ -159,7 +159,7 @@ void work_init_indexes(MemoryComponentManager* manager,
 	manager->addMemoryComponent(MemoryComponentType::TFIDF_INDEX, index_id, component);
 }
 
-void work_init_queues(MemoryComponentManager* manager,
+void work_init_queue(MemoryComponentManager* manager,
                       unsigned int queue_id,
                       int queue_size,
                       int block_size)

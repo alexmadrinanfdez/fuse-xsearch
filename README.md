@@ -17,45 +17,39 @@ It provides the means to communicate with the FUSE kernel module.
 
 ## Set-up
 
-### Passthrough file system
+The _XSearch_ file system mirrors the contents of the root directory (`/`) under the mountpoint. Conversely, any changes made under the mountpoint will be reflected in the root directory. Additionally, it will incorporate indexing capabilities into the passthrough file system.
+Only a subset of the file system operations supported by FUSE (sufficient for an operational file system) will be available. The rest will prompt an error message of the form: `<op>: <ERROR_MSG>: Function not implemented`.
 
-The _passthrough_ file system mirrors the contents of the root directory (`/`) under the mountpoint. Conversely, any changes made under the mountpoint will be reflected in the root directory.
+Because the searching operations of the file system differ with those of the typical kernel file system (e.g., in input and return types), the search queries may need to be implemented aside of the FUSE framework. This will be implemented, at first, through socket communication, using the simple client-server architecture. Therefore, the source consists of two files: the filesystem `xsfs.cpp` and the client `client.cpp`.
 
-To mount, execute in the terminal, inside the same folder as the file system code (`example/passthrough.c`);
+The project can be easily built with usual `cmake` directives. Inside the project folder, after cloning the project:
 
 ```bash
-gcc -Wall passthrough.c -o passthrough `pkg-config fuse3 --cflags --libs`
-./passthrough -f <mountpoint>
+mkdir build
+cd build
+cmake ..
+make
 ```
 
-TIf the feedback option, `-f`, will print debug messages specified via `printf`.
-
-To unmount;
+To mount the filesystem:
 
 ```bash
-fusermount -uz <mountpoint>
-```
-
-### XSearch-FUSE
-
-The _XSearch_ file system will incorporate indexing capabilities into the passthrough file system. Only a subset of the file system operations supported by FUSE will be available. The rest will prompt an error message of the form: `<op>: <ERROR_MSG>: Function not implemented`.
-
-Because the searching operations of the file system differ with those of the typical kernel file system (e.g., in input and return types), one or more queries may need to be implemented aside of the FUSE framework. This will be implemented, at first, through socket communication, using the simple client-server architecture. Therefore, the source consists of two files: the filesystem `xsfs.cpp` and the client `client.cpp`.
-
-To mount:
-
-```bash
-g++ -Wall xsfs.cpp -o xsfs `pkg-config fuse3 --cflags --libs`
-./passthrough -f <mountpoint>
+./xsfs -f <mountpoint>
 ```
 
 The `-f` option will print debug messages specified via `printf`.
 
-In a separate terminal, execute the client:
+### Client-server queries
+
+As mentioned, search queries need to be made through a client program. It is compiled when the project is built.
+
+The client needs to be executed in a different terminal:
 
 ```bash
-g++ -Wall -Wextra client.cpp -o client
+./client <search_term>
 ```
+
+Note that you can only search one term at a time.
 
 ### Virtual Machine
 

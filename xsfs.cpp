@@ -44,7 +44,6 @@ extern "C" {
 #include <string.h>
 #include <thread>
 #include <utility>
-// #include <thread>
 #include <atomic>
 #include <memory>
 

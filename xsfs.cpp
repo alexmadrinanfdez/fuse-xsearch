@@ -372,6 +372,8 @@ static int xs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		memset(&st, 0, sizeof(st));
 		st.st_ino = de->d_ino;
 		st.st_mode = de->d_type << 12;
+		if (filler(buf, de->d_name, &st, 0, FUSE_FILL_DIR_PLUS))
+                        break;
 	}
 
 	closedir(dp);

@@ -177,7 +177,7 @@ void server() {
 static int xs_getattr(const char *path, struct stat *stbuf,
 			struct fuse_file_info *fi)
 {
-	printf( "[getattr] from (node) %s\n", path );
+	cout << "[getattr] from " << path << endl;
 
 	(void) fi;
 	int res;
@@ -191,7 +191,7 @@ static int xs_getattr(const char *path, struct stat *stbuf,
 
 static int xs_mknod(const char *path, mode_t mode, dev_t rdev)
 {
-	printf( "[mknod] at (file) %s\n", path );
+	cout << "[mknod] at " << path << endl;
 
 	int res;
 
@@ -204,7 +204,7 @@ static int xs_mknod(const char *path, mode_t mode, dev_t rdev)
 
 static int xs_mkdir(const char *path, mode_t mode)
 {
-	printf( "[mkdir] at (dir) %s\n", path );
+	cout << "[mkdir] at " << path << endl;
 
 	int res;
 
@@ -218,7 +218,7 @@ static int xs_mkdir(const char *path, mode_t mode)
 /* Remove a file. Not related to symbolic/hard links */
 static int xs_unlink(const char *path)
 {
-	printf( "[unlink] at (file) %s\n", path );
+	cout << "[unlink] at " << path << endl;
 
 	int res;
 
@@ -231,7 +231,7 @@ static int xs_unlink(const char *path)
 
 static int xs_rmdir(const char *path)
 {
-	printf( "[rmdir] at (dir) %s\n", path );
+	cout << "[rmdir] at " << path << endl;
 
 	int res;
 
@@ -244,7 +244,7 @@ static int xs_rmdir(const char *path)
 
 static int xs_rename(const char *from, const char *to, unsigned int flags)
 {
-	printf( "[rename] %s to %s\n", from, to );
+	cout << "[rename] " << from << " to " << to << endl;
 
 	int res;
 
@@ -260,7 +260,7 @@ static int xs_rename(const char *from, const char *to, unsigned int flags)
 
 static int xs_open(const char *path, struct fuse_file_info *fi)
 {
-	printf( "[open] (file) at %s\n", path );
+	cout << "[open] at " << path << endl;
 
 	int res;
 
@@ -275,7 +275,7 @@ static int xs_open(const char *path, struct fuse_file_info *fi)
 static int xs_read(const char *path, char *buf, size_t size, off_t offset,
 		    struct fuse_file_info *fi)
 {
-	printf( "[read] %i bytes from (file) %s\n", size, path );
+	cout << "[read] " << size << " bytes from " << path << endl;
 
 	int fd;
 	int res;
@@ -300,7 +300,7 @@ static int xs_read(const char *path, char *buf, size_t size, off_t offset,
 static int xs_write(const char *path, const char *buf, size_t size,
 		    off_t offset, struct fuse_file_info *fi)
 {
-	printf( "[write] %i bytes in (file) %s\n", size, path );
+	cout << "[write] " << size << " bytes in " << path << endl;
 
 	int fd;
 	int res;
@@ -325,7 +325,7 @@ static int xs_write(const char *path, const char *buf, size_t size,
 
 static int xs_statfs(const char *path, struct statvfs *stbuf)
 {
-	printf( "[statfs] called\n", path );
+	cout << "[statfs] call" << endl;
 
 	int res;
 
@@ -339,13 +339,15 @@ static int xs_statfs(const char *path, struct statvfs *stbuf)
 /* Release an open file when there are no more references to it */
 static int xs_release(const char *path, struct fuse_file_info *fi)
 {
-	printf( "[release] (file) at %s\n", path );
-
-	(void) path;
-	close(fi->fh);
+	cout << "[release] at " << path << endl;
 
 	work_read(manager,  const_cast<char*>(path), id, block_size);
 	work_index(manager, &total_num_tokens, id, id, block_size + BLOCK_ADDON_SIZE);
+
+	cout << "tokens: " << total_num_tokens << endl;
+	
+	(void) path;
+	close(fi->fh);
 
 	return 0;
 }
@@ -354,7 +356,7 @@ static int xs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 		       off_t offset, struct fuse_file_info *fi,
 		       enum fuse_readdir_flags flags)
 {
-	printf( "[readdir] at (dir) %s\n", path );
+	cout << "[readdir] at " << path << endl;
 
 	DIR *dp;
 	struct dirent *de;
@@ -383,7 +385,7 @@ static int xs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 static void *xs_init(struct fuse_conn_info *conn,
 		      struct fuse_config *cfg)
 {
-	printf("[init] filesystem\n");
+	cout << "[init] filesystem" << endl;
 
 	(void) conn;
 	cfg->use_ino = 1;
@@ -400,7 +402,7 @@ static void *xs_init(struct fuse_conn_info *conn,
 /* Check file access permissions */
 static int xs_access(const char *path, int mask)
 {
-	printf( "[access] to path %s\n", path );
+	cout << "[access] to path " << path << endl;
 
 	int res;
 
@@ -414,7 +416,7 @@ static int xs_access(const char *path, int mask)
 static int xs_create(const char *path, mode_t mode,
 		    struct fuse_file_info *fi)
 {
-	printf( "[create] (file) at %s\n", path );
+	cout << "[create] at " << path << endl;
 
 	int res;
 
@@ -431,7 +433,7 @@ static int xs_create(const char *path, mode_t mode,
 static int xs_utimens(const char *path, const struct timespec ts[2],
 		       struct fuse_file_info *fi)
 {
-	printf( "[utimens] called on %s\n", path );
+	cout << "[utimens] on " << path << endl;
 
 	(void) fi;
 	int res;
@@ -450,7 +452,7 @@ static int xs_utimens(const char *path, const struct timespec ts[2],
 static int xs_fallocate(const char *path, int mode,
 			off_t offset, off_t length, struct fuse_file_info *fi)
 {
-	printf( "[fallocate] file %s\n", path );
+	cout << "[fallocate] file " << path << endl;
 	
 	int fd;
 	int res;
@@ -479,7 +481,7 @@ static int xs_fallocate(const char *path, int mode,
 /* Find next data or hole after the specified offset */
 static off_t xs_lseek(const char *path, off_t off, int whence, struct fuse_file_info *fi)
 {
-	printf( "[lseek] %i at %s\n", whence, path );
+	cout << "[lseek] " << whence << " at " << path << endl;
 
 	int fd;
 	off_t res;

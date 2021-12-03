@@ -24,7 +24,7 @@ WORKDIR /xsfs
 
 # ouroboroslib setup
 # get the specific supported commit
-RUN git clone https://gitlab.com/xsearch/ouroboroslib/-/tree/1bca34e1e88968d9c43caf3cf242b96eba49a9ae
+RUN git clone https://gitlab.com/xsearch/ouroboroslib/
 WORKDIR ouroboroslib/build
 RUN cmake ..
 RUN make

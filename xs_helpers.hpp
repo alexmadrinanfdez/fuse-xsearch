@@ -2,7 +2,7 @@ using namespace std;
 using namespace ouroboros;
 
 #define BLOCK_SIZE 1024
-#define QUEUE_SIZE 1 << 16 // bit shifting
+#define QUEUE_SIZE 4096
 #define DELIMITERS " \t\n"
 
 /* XSearch functions */

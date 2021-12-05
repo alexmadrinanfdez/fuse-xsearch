@@ -68,8 +68,6 @@ DualQueue<FileDataBlock*> queue(QUEUE_SIZE);
 FileDataBlock *dataBlocks;
 char *buffers;
 long rc(0);
-// std::vector<std::tuple<long, long>> *search_result;
-// long searchIdx, fileIdx;
 
 /* Server for XSearch queries */
 
@@ -125,24 +123,24 @@ void server() {
 		cout << "[server] " << search_term << endl; 
 
 		// process query
+		vector<tuple<long, long>> *search_result;
+		long searchIdx, fileIdx;
         int frequency = 0;
         long numFiles = MAX_RESULTS;
-        
-        /* cout << "- " << search_term << " : [ " << flush;
 
-		// search the index for the query term and return the term and inverse document frequencies
-		result = index->lookup(search_term);
-		for (int j = 0; (j < result->files.size()) and (numFiles > 0); j++, numFiles--) {
-			const char* file_path = fileIndex->reverseLookup(result->files[j].fileIdx);
-			cout << file_path << ":" << result->files[j].fileFrequency << " " << flush;	
+		// execute exact match data retrieval query
+		searchIdx = termIndex->lookup(search_term);
+		search_result = invertedIndex->lookup(searchIdx);
+		cout << "Query results (one per line):" << endl;
+		for (auto inverted_it = search_result->begin(); (inverted_it < search_result->end()) and (numFiles > 0); ++inverted_it, numFiles--)
+		{
+			fileIdx = get<0>(*inverted_it);
+			cout << "- " << fileIndex->reverseLookup(fileIdx) << endl;
 		}
-		frequency += result->termFrequency;
-        
-        if (numFiles == 0) {
-            cout << "... ] " << frequency << endl;
-        } else {
-            cout << "] " << frequency << endl;
-        } */
+		if (numFiles == 0) {
+            cout << "- ..." << endl;
+        }
+		cout << endl;
 
 		// notify the client
 		char *msg = "Success!";

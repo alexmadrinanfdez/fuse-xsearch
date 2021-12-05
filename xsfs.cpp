@@ -29,8 +29,9 @@ extern "C" {
 	#include "fs_helpers.h"
 }
 
+// #include <cstdio>
+// #include <cstdlib>
 #include <iostream>
-// #include <cmath>
 #include <cerrno>
 #include <cstring>
 #include <clocale>
@@ -59,17 +60,16 @@ using namespace ouroboros;
 
 /* XSearch variables declaration */
 
-int id;
-int queue_size;
-int block_size;
-long page_size;
-// the manager is used to store and provide access to the queues
-TFIDFIndexMemoryComponentType store_type;
-MemoryComponentManager* manager;
-FileDualQueueMemoryComponent* component;
-DualQueue<FileDataBlock*> *queue;
-// atomic int storing the total number of blocks read
+BaseFileIndex *fileIndex;
+BaseTermIndex *termIndex;
+BaseTermFileRelation *invertedIndex;
 atomic<long> total_num_tokens(0);
+DualQueue<FileDataBlock*> queue(QUEUE_SIZE);
+FileDataBlock *dataBlocks;
+char *buffers;
+long rc(0);
+// std::vector<std::tuple<long, long>> *search_result;
+// long searchIdx, fileIdx;
 
 /* Server for XSearch queries */
 
@@ -128,28 +128,7 @@ void server() {
         int frequency = 0;
         long numFiles = MAX_RESULTS;
         
-        cout << "- " << search_term << " : [ " << flush;
-        
-        TFIDFIndexMemoryComponent* componentIndex;
-		FileIndexMemoryComponent* componentFileIndex;
-		shared_ptr<BaseTFIDFIndex> index;
-		shared_ptr<BaseFileIndex> fileIndex;
-		shared_ptr<TFIndexResult> result;
-		long idx;
-		
-		// get the TFIDF index component identified by index_id
-		componentIndex = (TFIDFIndexMemoryComponent*) 
-							manager->getMemoryComponent(MemoryComponentType::TFIDF_INDEX, id);
-
-		// get the TFIDF index from the component
-		index = componentIndex->getTFIDFIndex();
-
-		// get the file index component identified by index_id modulo num_readers
-		componentFileIndex = (FileIndexMemoryComponent*)
-								manager->getMemoryComponent(MemoryComponentType::FILE_INDEX, id);
-
-		// get the file index from the component
-		fileIndex = componentFileIndex->getFileIndex();
+        /* cout << "- " << search_term << " : [ " << flush;
 
 		// search the index for the query term and return the term and inverse document frequencies
 		result = index->lookup(search_term);
@@ -163,7 +142,7 @@ void server() {
             cout << "... ] " << frequency << endl;
         } else {
             cout << "] " << frequency << endl;
-        }
+        } */
 
 		// notify the client
 		char *msg = "Success!";
@@ -341,14 +320,13 @@ static int xs_release(const char *path, struct fuse_file_info *fi)
 {
 	cout << "[release] at " << path << endl;
 
-	work_read(manager,  const_cast<char*>(path), id, block_size);
-	work_index(manager, &total_num_tokens, id, id, block_size + BLOCK_ADDON_SIZE);
+	work_read(&queue, fileIndex,  const_cast<char*>(path));
+	work_tokidx(&queue, termIndex, invertedIndex, &total_num_tokens);
 
 	cout << "tokens: " << total_num_tokens << endl;
 	
 	(void) path;
 	close(fi->fh);
-
 	return 0;
 }
 
@@ -532,16 +510,24 @@ static const struct fuse_operations xs_oper = {
 
 int main(int argc, char *argv[])
 {
-	id = 1;
-	queue_size = QUEUE_SIZE_RATIO;
-	block_size = BLOCK_SIZE;
-	page_size = PAGE_SIZE;
-	store_type = TFIDFIndexMemoryComponentType::PSTD;
-	// create each queue add the queues to the manager
-    manager = new MemoryComponentManager();
+	// prepare the file readers and the tokenizers/indexers
+	fileIndex = new StdHashMapFileIndex();
+	termIndex = new StdHashMapTermIndex();
+    invertedIndex = new StdHashMapInvertedIndex();
 
-	work_init_queue(manager, id, queue_size, block_size);
-	work_init_index(manager, id, page_size, INIT_CAPACITY, store_type);
+    dataBlocks = new FileDataBlock[QUEUE_SIZE]();
+    buffers = NULL;
+    rc = posix_memalign((void**) &buffers, 512, QUEUE_SIZE * (long) BLOCK_SIZE);
+    if (rc != 0) {
+        cout << "ERR: Could not allocate buffer!" << endl;
+        delete[] dataBlocks;
+        return rc;
+    }
+
+	for (auto i = 0; i < QUEUE_SIZE; i++) {
+        dataBlocks[i].buffer = &buffers[i * BLOCK_SIZE];
+        queue.push_empty(&dataBlocks[i]);
+    }
 
     // launch server on separate thread 
     thread fooThread(server); 
@@ -550,6 +536,10 @@ int main(int argc, char *argv[])
 	// run the filesystem
 	return fuse_main(argc, argv, &xs_oper, NULL);
 
-	// free all memory components
-    // delete manager;
+	free(buffers);
+    delete[] dataBlocks;
+    delete invertedIndex;
+    delete termIndex;
+    delete fileIndex;
+	// delete search_result;
 }

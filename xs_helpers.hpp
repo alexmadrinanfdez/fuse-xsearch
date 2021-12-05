@@ -2,9 +2,8 @@ using namespace std;
 using namespace ouroboros;
 
 #define BLOCK_SIZE 1024
-#define QUEUE_SIZE 1024
+#define QUEUE_SIZE 1 << 16 // bit shifting
 #define DELIMITERS " \t\n"
-#define INIT_CAPACITY 1 << 16 // == pow(2, 16) (bit shifting)
 
 /* XSearch functions */
 

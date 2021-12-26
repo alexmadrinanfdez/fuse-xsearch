@@ -1,8 +1,6 @@
-# fuse-xsearch
+# xsfs
 
-Integration of XSearch with a local FUSE file system.
-
-The goal is to integrate XSearch within a file system to explore what kind of impact in performance it produces.
+Integration of XSearch with a local FUSE.
 
 _XSearch_ is a scalable solution for achieving information retrieval in large-scale storage systems.
 It focuses on indexing speed since it is focused on an academia audience that may prioritize availability over initial delay in their searches.
@@ -17,12 +15,12 @@ It provides the means to communicate with the FUSE kernel module.
 
 ## Set-up
 
-The _XSearch_ file system mirrors the contents of the root directory (`/`) under the mountpoint. Conversely, any changes made under the mountpoint will be reflected in the root directory. Additionally, it will incorporate indexing capabilities into the passthrough file system.
+The _XSearch_ file system mirrors the contents of the root directory (`/`) under the mountpoint. Conversely, any changes made under the mountpoint will be reflected in the root directory. Additionally, it will incorporate indexing capabilities into an otherwise pass-through file system.
 Only a subset of the file system operations supported by FUSE (sufficient for an operational file system) will be available. The rest will prompt an error message of the form: `<op>: <ERROR_MSG>: Function not implemented`.
 
-Because the searching operations of the file system differ with those of the typical kernel file system (e.g., in input and return types), the search queries may need to be implemented aside of the FUSE framework. This will be implemented, at first, through socket communication, using the simple client-server architecture. Therefore, the source consists of two files: the filesystem `xsfs.cpp` and the client `client.cpp`.
+Because the searching operations of the file system differ with those of the typical kernel file system (e.g., in input and return types), the search queries may need to be implemented aside from the FUSE framework. This will be implemented, at first, through socket communication, using the simple client-server architecture. Therefore, while the filesystem runs on the file `xsfs.cpp` and contains the server, searchs are carried out through the client `client.cpp`.
 
-The project can be easily built with usual `cmake` directives. Inside the project folder, after cloning the project:
+The project can be built with usual `cmake` directives. Inside the project folder, after cloning the project:
 
 ```bash
 mkdir build
@@ -39,6 +37,12 @@ To mount the filesystem:
 
 The `-f` option will print debug messages specified via `printf`.
 
+To unmount, use the `fusermount` command, provided by `libfuse`, from a separate terminal.
+
+```
+fusermount -u <mountpoint>
+```
+
 ### Client-server queries
 
 As mentioned, search queries need to be made through a client program. It is compiled when the project is built.
@@ -53,7 +57,7 @@ Note that you can only search one term at a time.
 
 ### Virtual Machine
 
-The project targets Linux kernels. To run it in a virtual Linux environment, one possibility is to use virtual machines.
+The project targets Linux kernels. To run it in a virtual Linux environment, one possibility is to use containers.
 The repository includes a `Dockerfile` to execute the program in a Docker virtual machine.
 To run the container, make sure you have `Docker` installed and execute in the terminal:
 
